@@ -15,8 +15,8 @@ app.all('/', function(req, res, next)
 {
   logRequest(req.body, "/")
   setCORSHeaders(res);
-
-  MongoClient.connect(req.body.db.url, function(err, client)
+  let _url = (req.headers['x-mongo-url']!='<no value>'?req.headers['x-mongo-url']:req.body.db.url);
+  MongoClient.connect(_url, function(err, client)
   {
     if ( err != null )
     {
@@ -39,6 +39,8 @@ app.all('/search', function(req, res, next)
 {
   logRequest(req.body, "/search")
   setCORSHeaders(res);
+  let _url = (req.headers['x-mongo-url']!='<no value>'?req.headers['x-mongo-url']:req.body.db.url);
+  let _db = (req.headers['x-mongo-db']!='<no value>'?req.headers['x-mongo-db']:req.body.db.db);
 
   // Generate an id to track requests
   const requestId = ++requestIdCounter                 
@@ -53,7 +55,7 @@ app.all('/search', function(req, res, next)
   }
   else
   {
-    doTemplateQuery(requestId, queryArgs, req.body.db, res, next);
+    doTemplateQuery(requestId, queryArgs, {url:_url,db:_db}, res, next);
   }
 });
 
@@ -124,6 +126,7 @@ function queryFinished(requestId, queryId, results, res, next)
 // Called to get graph points
 app.all('/query', function(req, res, next)
 {
+    let o = new Date();
     logRequest(req.body, "/query")
     setCORSHeaders(res);
 
@@ -154,9 +157,8 @@ app.all('/query', function(req, res, next)
       {
         // Add to the state
         queryStates.push( { pending : true } )
-
         // Run the query
-        runAggregateQuery( requestId, queryId, req.body, queryArgs, res, next)
+        runAggregateQuery(req, requestId, queryId, req.body, queryArgs, res, next)
       }
     }
   }
@@ -286,9 +288,12 @@ function parseQuery(query, substitutions)
 // Run an aggregate query. Must return documents of the form
 // { value : 0.34334, ts : <epoch time in seconds> }
 
-function runAggregateQuery( requestId, queryId, body, queryArgs, res, next )
+function runAggregateQuery(req, requestId, queryId, body, queryArgs, res, next )
 {
-  MongoClient.connect(body.db.url, function(err, client) 
+  let _url = (req.headers['x-mongo-url']!='<no value>'?req.headers['x-mongo-url']:req.body.db.url);
+  let _db = (req.headers['x-mongo-db']!='<no value>'?req.headers['x-mongo-db']:req.body.db.db);
+
+  MongoClient.connect(_url, function(err, client) 
   {
     if ( err != null )
     {
@@ -296,7 +301,7 @@ function runAggregateQuery( requestId, queryId, body, queryArgs, res, next )
     }
     else
     {
-      const db = client.db(body.db.db);
+      const db = client.db(_db);
   
       // Get the documents collection
       const collection = db.collection(queryArgs.collection);
