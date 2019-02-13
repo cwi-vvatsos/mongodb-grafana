@@ -6,7 +6,26 @@
   "partials": {
     "config": "public/app/plugins/datasource/simplejson/partials/config.html"
   },
-
+"routes": [
+  {
+      "path": "query",
+      "method": "*",
+      "url": "http://localhost:3333/query",
+      "headers": [
+         {"name": "X-mongo-db", "content": "{{.SecureJsonData.mongodb_db}}"},
+         {"name": "X-mongo-url", "content": "{{.SecureJsonData.mongodb_url}}"}
+      ]
+    },
+  {
+      "path": "search",
+      "method": "*",
+      "url": "http://localhost:3333/search",
+      "headers": [
+         {"name": "X-mongo-db", "content": "{{.SecureJsonData.mongodb_db}}"},
+         {"name": "X-mongo-url", "content": "{{.SecureJsonData.mongodb_url}}"}
+      ]
+    }
+],
   "metrics": true,
   "annotations": false,
 
